@@ -55,9 +55,13 @@ router.post('/login', async (req, res) => {
 
         if (results.length > 0) {
             const user = results[0];
-
+            
             const match = await bcrypt.compare(password, user.password);
             if (match) {
+                req.session.user = {
+                    user_id: user.user_id,
+                    username: user.username
+                };
                 return res.redirect('/home');
             } else {
                 return res.status(401).send('Invalid credentials');
@@ -66,6 +70,11 @@ router.post('/login', async (req, res) => {
             return res.status(404).send('User not found');
         }
     });
+});
+
+router.get('/logout', (req, res) => {
+    req.session.destroy();
+    res.redirect('/login');
 });
 
 module.exports = router;
