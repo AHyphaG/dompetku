@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cold Money - Home Page</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        nav {
+            background-color: #007BFF;
+            padding: 15px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        nav ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+        nav ul li {
+            margin-left: 20px;
+        }
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+        }
+        nav ul li a:hover {
+            text-decoration: underline;
+        }
+        .container {
+            text-align: center;
+            padding: 50px;
+        }
+        .input-box {
+            margin-bottom: 20px;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+
+
+        .calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+}
+
+.day {
+    padding: 10px;
+    border: 1px solid #ddd;
+    position: relative;
+}
+
+.dots {
+    display: flex;
+    justify-content: center;
+    margin-top: 5px;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 0 3px;
+}
+
+.green-dot {
+    background-color: green;
+}
+
+.red-dot {
+    background-color: red;
+}
+
+.tooltip {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #fff;
+    padding: 5px;
+    border: 1px solid #ddd;
+    z-index: 10;
+    width: max-content;
+    white-space: nowrap;
+}
+
+.day:hover .tooltip {
+    display: block;
+}
+
+.expense-form {
+    margin-top: 10px;
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.expense-form label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.expense-form input {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.expense-form button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+}
+
+.expense-form button:hover {
+    background-color: #45a049;
+}
+
+
+
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">Cold Money</div>
+        <ul>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </nav>
+
+
+
+    <!-- CALENDAR -->
+    <h1 style="text-align: center;">Monthly Calendar</h1>
+    
+
+    <div class="calendar">
+        <% calendarDays.forEach(day => { %>
+            <div class="day <%= day.completed ? 'green' : 'red' %>" data-date="<%= day.date %>">
+                <%= day.date %>
+    
+                <!-- DOTS UNTUK KATEGORI -->
+                <div class="dots">
+                    <% categories.forEach(category => { %>
+                        <% if (category.is_daily) { %>
+                            <% const activeDays = category.active_days ? category.active_days.split(',') : []; %>
+                            <% const dayOfWeek = new Date(day.date).toLocaleString('en-US', { weekday: 'short' }); %>
+                            
+                            <% if (activeDays.length > 0) { %> <!-- Cek apakah activeDays tidak kosong -->
+                                <% if (activeDays.includes(dayOfWeek)) { %>
+                                    <div class="dot <%= day.expenses[category.category_name] ? 'green-dot' : 'red-dot' %>"></div>
+                                <% } %>
+                            <% } else { %>
+                                <div class="dot <%= day.expenses[category.category_name] ? 'green-dot' : 'red-dot' %>"></div>
+                            <% } %>
+                        <% } else { %>
+                            <div class="dot <%= day.expenses[category.category_name] ? 'green-dot' : 'red-dot' %>"></div>
+                        <% } %>
+                    <% }) %>
+                </div>
+    
+                <!-- TANDA PANAH UNTUK MENAMPILKAN FORM -->
+                <div class="toggle-form" onclick="toggleForm('<%= day.date %>')">
+                    &#9660; <!-- Panah bawah -->
+                </div>
+    
+                <!-- FORM YANG MUNCUL SAAT DIKLIK -->
+                <div class="expense-form" id="form-<%= day.date %>" style="display: none;">
+                    <div class="close-button" onclick="toggleForm('<%= day.date %>')">&times;</div>
+                    <form action="/expenses/save" method="POST">
+                        <input type="hidden" name="date" value="<%= day.date %>">
+                        
+                        <% categories.forEach(category => { %>
+                            <% if (category.is_daily) { %>
+                                <% const activeDays = category.active_days ? category.active_days.split(',') : []; %>
+                                <% const dayOfWeek = new Date(day.date).toLocaleString('en-US', { weekday: 'short' }); %>
+                    
+                                <% if (activeDays.length === 0 || activeDays.includes(dayOfWeek)) { %>
+                                    <label for="<%= category.category_name %>-expense-<%= day.date %>">
+                                        <input type="checkbox" class="edit-checkbox" 
+                                               id="edit-<%= category.category_name %>-<%= day.date %>"
+                                               name="listcat[<%= category.category_id %>]" 
+                                               onchange="toggleExpenseInput('<%= category.category_name %>', '<%= day.date %>')">
+                                        <%= category.category_name %>:
+                                    </label>
+                                    <input type="number" name="expenses[<%= category.category_id %>]" min="0">
+                                    <input type="hidden" name="IDs[]" value="<%= category.category_id %>">
+                                <% } %>
+                            <% } else { %>
+                                <label for="<%= category.category_name %>-expense-<%= day.date %>">
+                                    <input type="checkbox" class="edit-checkbox" 
+                                           id="edit-<%= category.category_name %>-<%= day.date %>"
+                                           name="listcat[<%= category.category_id %>]" 
+                                           onchange="toggleExpenseInput('<%= category.category_name %>', '<%= day.date %>')">
+                                    <%= category.category_name %>:
+                                </label>
+                                <input type="number" name="expenses[<%= category.category_id %>]" min="0">
+                                <input type="hidden" name="IDs[]" value="<%= category.category_id %>">
+                            <% } %>
+                        <% }) %>
+                        
+                        <!-- Tombol Save atau Edit -->
+                        <button type="submit"><%= Object.keys(day.expenses).length > 0 ? 'Edit' : 'Save' %></button>
+                    </form>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+    
+    <script>
+        function toggleForm(date) {
+            const form = document.getElementById('form-' + date);
+            const displayStatus = form.style.display === 'block' ? 'none' : 'block';
+            
+            // Set display status for the form
+            form.style.display = displayStatus;
+        }
+    
+        function toggleExpenseInput(category, date) {
+            const checkbox = document.getElementById('edit-' + category + '-' + date);
+            const input = document.getElementById(category + '-expense-' + date);
+    
+            // Menampilkan atau menyembunyikan input berdasarkan status checkbox
+            input.style.display = checkbox.checked ? 'block' : 'none';
+        }
+    </script>
+    
+    <style>
+        .close-button {
+            cursor: pointer;
+            font-size: 24px;
+            color: red;
+            position: absolute; /* Absolute position to place it in the top left */
+            top: 10px;
+            left: 10px;
+        }
+    
+        .expense-form {
+            position: relative; /* To position the close button relative to the form */
+            border: 1px solid #ccc; /* Optional: border for form visibility */
+            padding: 10px; /* Optional: padding for form */
+            background-color: white; /* Optional: background color for form */
+            margin-top: 10px; /* Optional: space above the form */
+        }
+    
+        .toggle-form {
+            cursor: pointer;
+            font-size: 16px;
+            color: blue;
+            margin-top: 5px; /* Optional: space above the toggle */
+        }
+    </style>
+    
+    
+</body>
+</html>
+

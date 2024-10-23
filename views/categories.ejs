@@ -97,20 +97,51 @@
 
         <h2>Add New Category</h2>
         <form action="/categories/add" method="POST">
-            <div class="form-group">
-                <label for="name">Category's Name</label>
-                <input type="text" id="name" name="CatName" required>
+            <label for="catName">Category Name:</label>
+            <input type="text" name="catName" required>
+        
+            <label for="is_daily">
+                <input type="checkbox" id="is_daily" name="is_daily" onchange="toggleBudgetFields()"> Is Daily?
+            </label>
+        
+            <div id="budget_amount_field" style="display: block;">
+                <label for="budget_amount">Total Budget:</label>
+                <input type="number" name="budget_amount" min="0" placeholder="Enter total budget">
             </div>
-            <div class="form-group">
-                <label for="description">Description</label>
-                <input type="text" id="description" name="description" required>
+        
+            <div id="daily_budget_field" style="display: none;">
+                <label for="daily_budget">Daily Budget:</label>
+                <input type="number" name="daily_budget" min="0" placeholder="Enter daily budget">
+        
+                <label>Active Days:</label>
+                <div>
+                    <label><input type="checkbox" name="active_days[]" value="Mon"> Monday</label>
+                    <label><input type="checkbox" name="active_days[]" value="Tue"> Tuesday</label>
+                    <label><input type="checkbox" name="active_days[]" value="Wed"> Wednesday</label>
+                    <label><input type="checkbox" name="active_days[]" value="Thu"> Thursday</label>
+                    <label><input type="checkbox" name="active_days[]" value="Fri"> Friday</label>
+                    <label><input type="checkbox" name="active_days[]" value="Sat"> Saturday</label>
+                    <label><input type="checkbox" name="active_days[]" value="Sun"> Sunday</label>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="frequency">frequency</label>
-                <input type="number" id="frequency" name="frequency" min="1" required>
-            </div>
-            <button type="submit" class="btn">Add Income</button>
+        
+            <button type="submit">Add Category</button>
         </form>
-    </div>
+        
+        <script>
+            function toggleBudgetFields() {
+                const isDailyCheckbox = document.getElementById('is_daily');
+                const dailyBudgetField = document.getElementById('daily_budget_field');
+                const budgetAmountField = document.getElementById('budget_amount_field');
+        
+                if (isDailyCheckbox.checked) {
+                    dailyBudgetField.style.display = 'block';
+                    budgetAmountField.style.display = 'none'; // Sembunyikan total budget jika harian
+                } else {
+                    dailyBudgetField.style.display = 'none';
+                    budgetAmountField.style.display = 'block'; // Tampilkan total budget jika tidak harian
+                }
+            }
+        </script>
 </body>
 </html>
