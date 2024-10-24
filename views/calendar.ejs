@@ -194,38 +194,84 @@
                         <input type="hidden" name="date" value="<%= day.date %>">
                         
                         <% categories.forEach(category => { %>
-                            <% if (category.is_daily) { %>
+                            
+                            <%if (category.is_daily) {%>
                                 <% const activeDays = category.active_days ? category.active_days.split(',') : []; %>
                                 <% const dayOfWeek = new Date(day.date).toLocaleString('en-US', { weekday: 'short' }); %>
-                    
                                 <% if (activeDays.length === 0 || activeDays.includes(dayOfWeek)) { %>
-                                    <label for="<%= category.category_name %>-expense-<%= day.date %>">
+                                    <div class="expense-input-group">
+                                        <div class="label-group">
+                                            <label for="<%= category.category_name %>-expense-<%= day.date %>">
+                                                <%= category.category_name %>:
+                                            </label>
+                                            
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="checkbox" class="edit-checkbox" 
+                                               id="edit-<%= category.category_name %>-<%= day.date %>"
+                                               name="listcat[<%= category.category_id %>]" 
+                                               onchange="toggleExpenseInput('<%= category.category_id %>', '<%= category.category_name %>', '<%= day.date %>')">
+                                            <input type="number" 
+                                               id="expenses[<%= category.category_id %>]-<%= day.date %>" 
+                                               name="expenses[<%= category.category_id %>]" 
+                                               min="0"
+                                               value="<%= day.expenses[category.category_name] %>" 
+                                               <%= day.expenses[category.category_name] ? 'readonly class=frozen' : '' %> >
+                                            <input type="hidden" name="IDs[]" value="<%= category.category_id %>">
+                                        </div>
+                                    </div>
+                                <% } %>
+                            <%} else {%>
+                                <div class="expense-input-group">
+                                    <div class="label-group">
+                                        <label for="<%= category.category_name %>-expense-<%= day.date %>">
+                                            <%= category.category_name %>:
+                                        </label>
+                                        
+                                    </div>
+                                    <div class="input-group">
                                         <input type="checkbox" class="edit-checkbox" 
                                                id="edit-<%= category.category_name %>-<%= day.date %>"
                                                name="listcat[<%= category.category_id %>]" 
-                                               onchange="toggleExpenseInput('<%= category.category_name %>', '<%= day.date %>')">
-                                        <%= category.category_name %>:
-                                    </label>
-                                    <input type="number" name="expenses[<%= category.category_id %>]" min="0">
-                                    <input type="hidden" name="IDs[]" value="<%= category.category_id %>">
-                                <% } %>
-                            <% } else { %>
-                                <label for="<%= category.category_name %>-expense-<%= day.date %>">
-                                    <input type="checkbox" class="edit-checkbox" 
-                                           id="edit-<%= category.category_name %>-<%= day.date %>"
-                                           name="listcat[<%= category.category_id %>]" 
-                                           onchange="toggleExpenseInput('<%= category.category_name %>', '<%= day.date %>')">
-                                    <%= category.category_name %>:
-                                </label>
-                                <input type="number" name="expenses[<%= category.category_id %>]" min="0">
-                                <input type="hidden" name="IDs[]" value="<%= category.category_id %>">
-                            <% } %>
+                                               onchange="toggleExpenseInput('<%= category.category_id %>', '<%= category.category_name %>', '<%= day.date %>')">
+                                        <input type="number" 
+                                               id="expenses[<%= category.category_id %>]-<%= day.date %>" 
+                                               name="expenses[<%= category.category_id %>]" 
+                                               min="0"
+                                               value="<%= day.expenses[category.category_name] %>" 
+                                               <%= day.expenses[category.category_name] ? 'readonly class="frozen"' : '' %> >
+                                        <input type="hidden" name="IDs[]" value="<%= category.category_id %>">
+                                    </div>
+                                </div>
+                            <%}%>
+                            
                         <% }) %>
-                        
-                        <!-- Tombol Save atau Edit -->
+                        <div class="label-group">
+                            <label for="other-expense-<%= day.date %>">Pengeluaran Lainnya:</label>
+                        </div>
+                        <div id="other-expenses-<%= day.date %>">
+                            <% if (day.otherExpenses.length > 0) { %>
+                                <% day.otherExpenses.forEach((expense, index) => { %>
+                                    <div class="input-group other-expense">
+                                        <input type="text" name="other_expenses[<%= day.date %>][<%= index %>][description]" value="<%= expense.description %>" readonly class="frozen">
+                                        <input type="number" name="other_expenses[<%= day.date %>][<%= index %>][amount]" value="<%= expense.amount %>" readonly class="frozen">
+                                    </div>
+                                <% }) %>
+                            <% } %>
+                            
+                            <!-- Placeholder untuk input "lainnya" -->
+                            <div class="input-group other-expense">
+                                <input type="text" name="other_expenses[<%= day.date %>][<%= day.otherExpenses.length %>][description]" placeholder="Deskripsi" required>
+                                <input type="number" name="other_expenses[<%= day.date %>][<%= day.otherExpenses.length %>][amount]" placeholder="Jumlah" min="0" required>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addOtherExpense('<%= day.date %>')">Tambah Pengeluaran</button>
+                        <!-- Tombol Save -->
                         <button type="submit"><%= Object.keys(day.expenses).length > 0 ? 'Edit' : 'Save' %></button>
                     </form>
                 </div>
+                
+                               
             </div>
         <% }) %>
     </div>
@@ -239,13 +285,45 @@
             form.style.display = displayStatus;
         }
     
-        function toggleExpenseInput(category, date) {
-            const checkbox = document.getElementById('edit-' + category + '-' + date);
-            const input = document.getElementById(category + '-expense-' + date);
-    
-            // Menampilkan atau menyembunyikan input berdasarkan status checkbox
-            input.style.display = checkbox.checked ? 'block' : 'none';
+        function toggleExpenseInput(categoryID, category_name, date) {
+            const checkbox = document.getElementById('edit-' + category_name + '-' + date);
+            const input = document.getElementById('expenses[' + categoryID + ']-'+date);
+
+            if (checkbox.checked) {
+                input.removeAttribute('readonly');
+                input.classList.remove('frozen');
+            } else {
+                input.setAttribute('readonly', true);
+                input.classList.add('frozen');
+            }
         }
+        function enableEditing(date) {
+            // Mendapatkan semua input pada form dengan id sesuai tanggal
+            const form = document.getElementById(`form-${date}`);
+            const inputs = form.querySelectorAll('input[type="number"]');
+            
+            // Mengubah input menjadi editable
+            inputs.forEach(input => {
+                input.removeAttribute('readonly');
+            });
+        }
+
+        let otherExpenseCount = 1;
+
+        function addOtherExpense(date) {
+            const container = document.getElementById('other-expenses-' + date);
+            const newExpense = document.createElement('div');
+            newExpense.classList.add('input-group', 'other-expense');
+            
+            newExpense.innerHTML = `
+                <input type="text" name="other_expenses[${date}][${otherExpenseCount}][description]" placeholder="Deskripsi" required>
+                <input type="number" name="other_expenses[${date}][${otherExpenseCount}][amount]" placeholder="Jumlah" min="0" required>
+            `;
+            
+            container.appendChild(newExpense);
+            otherExpenseCount++;
+        }
+
     </script>
     
     <style>
@@ -253,7 +331,6 @@
             cursor: pointer;
             font-size: 24px;
             color: red;
-            position: absolute; /* Absolute position to place it in the top left */
             top: 10px;
             left: 10px;
         }
@@ -271,6 +348,23 @@
             font-size: 16px;
             color: blue;
             margin-top: 5px; /* Optional: space above the toggle */
+        }
+
+        .input-group{
+            display: flex;
+            align-items: center;
+        }
+        .expense-input-group label {
+            flex: 1;
+        }
+
+        .expense-input-group input[type="number"] {
+            width: 100px;
+        }
+        .frozen {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
         }
     </style>
     
